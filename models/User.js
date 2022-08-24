@@ -58,6 +58,16 @@ module.exports = ( sequelize ) => {
         }
     }, { sequelize });
 
+    User.association = (models) => {
+        User.hasMany(models.Course, {
+            as: 'courseCreator',
+            foreignKey: {
+                fieldName: 'userId',
+                allowNull: false
+            }
+        });
+    };
+
+    return User;
 };
 
-return User;
