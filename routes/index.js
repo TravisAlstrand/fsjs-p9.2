@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { asyncHandler } = require('../middleware');
+// const { asyncHandler, authenticateUser } = require('../middleware')
+const { asyncHandler } = require('../middleware/asyncHandler');
+const { authenticateUser } = require('../middleware/authenticateUser');
 
 /* ========== USER ROUTES ========== */
 
 // A /api/users GET route that will return all properties and values for the currently authenticated User along with a 200 HTTP status code.
-router.get('/users', asyncHandler( async (req, res) => {
-
+router.get('/users', authenticateUser, asyncHandler( async (req, res) => {
+    console.log(req.currentUser);
 }));
 
 // A /api/users POST route that will create a new user, set the Location header to "/", and return a 201 HTTP status code and no content.
@@ -40,3 +42,5 @@ router.put('/courses/:id', asyncHandler( async (req, res) => {
 router.delete('/courses/:id', asyncHandler( async (req, res) => {
 
 }));
+
+module.exports = router;

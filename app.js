@@ -57,7 +57,7 @@ sequelize.sync()
   .then(() => {
     console.log("All models were synchronized successfully.");
   }).catch(err => {
-    console.error('Models not synchronized successfully!', err);
+    console.error('Model synchronization was unsuccessful!', err);
   })
 
 
