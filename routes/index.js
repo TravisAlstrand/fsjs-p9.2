@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-// const { asyncHandler, authenticateUser } = require('../middleware')
+const { User, Course } = require('../models');
 const { asyncHandler } = require('../middleware/asyncHandler');
 const { authenticateUser } = require('../middleware/authenticateUser');
 
@@ -8,12 +8,43 @@ const { authenticateUser } = require('../middleware/authenticateUser');
 
 // A /api/users GET route that will return all properties and values for the currently authenticated User along with a 200 HTTP status code.
 router.get('/users', authenticateUser, asyncHandler( async (req, res) => {
-    console.log(req.currentUser);
+
+    // variable for user object sent back from authenticateUser
+    const user = req.currentUser;
+
+    if (user) {
+        // set status and parse only these 3 properties of user 
+        res.status(200).json({
+            "firstName": user.firstName,
+            "lastName": user.lastName,
+            "emailAddress": user.emailAddress
+        });
+    } else {
+        throw new Error;
+    }
 }));
 
 // A /api/users POST route that will create a new user, set the Location header to "/", and return a 201 HTTP status code and no content.
 router.post('/users', asyncHandler( async (req, res) => {
-
+    try {
+        // wait to create new user using info from request body
+        await User.create(req.body);
+        // set location header to '/', set status to 201, end process 
+        res.setHeader('Location', '/')
+            .status(201)
+            .end();
+    } catch(error) {
+        // if error is a validation or unique error from models
+        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+            // map over errors and get the error message
+            const errors = error.errors.map(err => err.message);
+            // set status to 400 and print error messages
+            res.status(400).json({ errors });
+        } else {
+            // if error is not a validation or unique from models throw new error
+            throw error;
+        }
+    };
 }));
 
 /* ========== COURSE ROUTES ========== */
@@ -21,16 +52,78 @@ router.post('/users', asyncHandler( async (req, res) => {
 // A /api/courses GET route that will return all courses including the User associated with each course and a 200 HTTP status code.
 router.get('/courses', asyncHandler( async (req, res) => {
 
+    // wait for all courses to be found and include course creator objects
+    const allCourses = await Course.findAll({
+        include: {
+            model: User,
+            as: 'courseCreator',
+            attributes: ['firstName', 'lastName', 'emailAddress']
+        }
+    });
+
+    // create new array, exclude 'created at / updated at' properties
+    const courses = allCourses.map( ({ id, title, description, estimatedTime, materialsNeeded, userId, courseCreator}) => {
+        return { id, title, description, estimatedTime, materialsNeeded, userId, courseCreator};
+    });
+
+    // set status and parse courses to json
+    res.status(200).json(courses);
 }));
 
 // A /api/courses/:id GET route that will return the corresponding course including the User associated with that course and a 200 HTTP status code.
-router.get('/courses/:id', asyncHandler( async (req, res) => {
+router.get('/courses/:id', asyncHandler( async (req, res, next) => {
 
+    // wait for specific course to be found and include course creator object
+    const course = await Course.findByPk(req.params.id, {
+        include: {
+            model: User,
+            as: 'courseCreator',
+            attributes: ['firstName', 'lastName', 'emailAddress']
+        }
+    });
+
+    // if a course was found...
+    if (course) {
+        // set status and parse course to json excluding 'created at / updated at'
+        res.status(200).json({
+            "id": course.id,
+            "title": course.title,
+            "description": course.description,
+            "estimatedTime": course.estimatedTime,
+            "materialsNeeded": course.materialsNeeded,
+            "userId": course.userId,
+            "courseCreator": course.courseCreator
+        });
+    } else {
+        // if no course was found, set status to 404 and push to error handlers with 'next'
+        res.status(404);
+        next();
+    }
 }));
 
 // A /api/courses POST route that will create a new course, set the Location header to the URI for the newly created course, and return a 201 HTTP status code and no content.
-router.post('/courses', asyncHandler( async (req, res) => {
+router.post('/courses', authenticateUser, asyncHandler( async (req, res) => {
 
+    try {
+        // wait to create a new course
+        const newCourse = await Course.create(req.body);
+        
+        // set status and location header
+        res.status(201).setHeader('Location', `/courses/${newCourse.id}`).end();
+    } catch(error) {
+        // if error is a validation or unique error from models
+        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+
+            // map over errors and get the error message
+            const errors = error.errors.map(err => err.message);
+
+            // set status to 400 and print error messages
+            res.status(400).json({ errors });
+        } else {
+            // if error is not a validation or unique from models throw new error
+            throw error;
+        }
+    }
 }));
 
 // A /api/courses/:id PUT route that will update the corresponding course and return a 204 HTTP status code and no content.
