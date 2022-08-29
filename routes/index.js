@@ -127,17 +127,67 @@ router.post('/courses', authenticateUser, asyncHandler( async (req, res) => {
 }));
 
 // A /api/courses/:id PUT route that will update the corresponding course and return a 204 HTTP status code and no content.
-router.put('/courses/:id', asyncHandler( async (req, res) => {
+router.put('/courses/:id', authenticateUser, asyncHandler( async (req, res) => {
 
-    // wait for specific course to be found
-    const course = await Course.findByPk(req.params.id);
-    
-    
+    try {
+        // wait for specific course to be found
+        const course = await Course.findByPk(req.params.id);
+
+        // if a course was found...
+        if (course) {
+
+            // if the authed user is the creator of the course...
+            if (req.currentUser.id === course.userId) {
+
+                // wait to update the course in db
+                // if successful, set status and end
+                await course.update(req.body);
+                res.status(204).end();
+            } else {
+                // if not correct user, set status and send message
+                res.status(403).json({message: "You don't have access to update this course"});
+            }
+        } else {
+            // if course was not found send 404 and message
+            res.status(404).json({message: "The course was not found"})
+        }
+    } catch(error) {
+        // if error was a Sequelize Validation Error...
+        if (error.name === 'SequelizeValidationError') {
+            const errors = error.errors.map(err => err.message);
+            res.status(400).json({ errors });
+        } else {
+            throw error;
+        }
+    }
 }));
 
 // A /api/courses/:id DELETE route that will delete the corresponding course and return a 204 HTTP status code and no content.
-router.delete('/courses/:id', asyncHandler( async (req, res) => {
+router.delete('/courses/:id', authenticateUser, asyncHandler( async (req, res) => {
 
+    // wait to find specific course
+    const course = Course.findByPk(req.params.id);
+
+    // if a course was found...
+    if (course) {
+
+        // if the authed user is the creator of the course...
+        if (req.currentUser.id === course.userId) {
+
+            // wait to delete course from db
+            await course.destroy();
+            
+            // set status and end
+            res.status(204).end();
+        } else {
+            // if authed user does not own course...
+            // set status and send message
+            res.status(403).json({message: "You do not have access to delete this course"});
+        }
+    } else {
+        // if course was not found send 404 and message
+        res.status(404).json({message: "The course was not found"})
+    }
 }));
 
 module.exports = router;
