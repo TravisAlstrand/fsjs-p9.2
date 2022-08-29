@@ -128,7 +128,11 @@ router.post('/courses', authenticateUser, asyncHandler( async (req, res) => {
 
 // A /api/courses/:id PUT route that will update the corresponding course and return a 204 HTTP status code and no content.
 router.put('/courses/:id', asyncHandler( async (req, res) => {
-// DO THE THINGS!!!!!
+
+    // wait for specific course to be found
+    const course = await Course.findByPk(req.params.id);
+    
+    
 }));
 
 // A /api/courses/:id DELETE route that will delete the corresponding course and return a 204 HTTP status code and no content.
