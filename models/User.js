@@ -33,6 +33,7 @@ module.exports = ( sequelize ) => {
         emailAddress: {
             type: DataTypes.STRING,
             allowNull: false,
+            isEmail: true,
             unique: {
                 msg: "A user has already used this email address"
             },
@@ -42,6 +43,9 @@ module.exports = ( sequelize ) => {
                 },
                 notEmpty: {
                     msg: "Please provide an email address"
+                },
+                isEmail: {
+                    msg: "Please provide a valid email"
                 }
             }
         },
