@@ -42,7 +42,6 @@ module.exports = ( sequelize ) => {
             as: 'courseCreator',
             foreignKey: {
                 fieldName: 'userId',
-                allowNull: false    
             }
         });
     };
