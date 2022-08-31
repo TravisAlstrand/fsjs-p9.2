@@ -166,7 +166,7 @@ router.put('/courses/:id', authenticateUser, asyncHandler( async (req, res) => {
 router.delete('/courses/:id', authenticateUser, asyncHandler( async (req, res) => {
 
     // wait to find specific course
-    const course = Course.findByPk(req.params.id);
+    const course = await Course.findByPk(req.params.id);
 
     // if a course was found...
     if (course) {

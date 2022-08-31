@@ -55,15 +55,15 @@ module.exports = ( sequelize ) => {
                 notEmpty: {
                     msg: "Please provide a password"
                 }
+            },
+            set(val) {
+                const hashedPassword = bcrypt.hashSync(val, 10);
+                this.setDataValue('password', hashedPassword);
             }
-        },
-        set(val) {
-            const hashedPassword = bcrypt.hashSync(val, 10);
-            this.setDataValue('password', hashedPassword);
         }
     }, { sequelize });
 
-    User.association = (models) => {
+    User.associate = (models) => {
         User.hasMany(models.Course, {
             as: 'courseCreator',
             foreignKey: {
